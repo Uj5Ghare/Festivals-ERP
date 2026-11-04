@@ -182,7 +182,7 @@ export default function Expense() {
             <span className="block text-base font-bold">{bill ? t('billAdded') : t('billPhoto')}</span>
             <span className="block text-[13px] text-ink-3">{bill ? bill.name : t('optional')}</span>
           </span>
-          <input id="ex-bill" type="file" accept="image/*" capture="environment" className="sr-only-input" onChange={(e) => setBill(e.target.files?.[0] ?? null)} />
+          <input id="ex-bill" type="file" accept="image/*" className="sr-only-input" onChange={(e) => setBill(e.target.files?.[0] ?? null)} />
         </label>
 
         <RecordedBy name={member.name} ward={member.ward} />

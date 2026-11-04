@@ -163,6 +163,17 @@ export const api = {
     if (error) throw error
   },
 
+  async createRecoveryKey(mandalId: string): Promise<string> {
+    const { data, error } = await supabase.rpc('create_recovery_key', { p_mandal: mandalId })
+    if (error) throw error
+    return data as string
+  },
+
+  async resetMemberPin(mandalId: string, userId: string, pin: string) {
+    const { error } = await supabase.rpc('reset_member_pin', { p_mandal: mandalId, p_user: userId, p_pin: pin })
+    if (error) throw error
+  },
+
   async removeMember(mandalId: string, userId: string) {
     const { error } = await supabase.from('members').delete().eq('mandal_id', mandalId).eq('user_id', userId)
     if (error) throw error
@@ -171,8 +182,11 @@ export const api = {
 
 async function uploadImage(mandalId: string, prefix: string, file: File, maxSide: number): Promise<string> {
   const blob = await shrinkImage(file, maxSide)
-  const path = `${mandalId}/${prefix}-${Date.now()}.jpg`
-  const { error } = await supabase.storage.from(FILES_BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: true })
+  const type = blob.type || 'image/jpeg'
+  const ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'
+  // A fresh name every time, so no overwrite (upsert) is needed
+  const path = `${mandalId}/${prefix}-${Date.now()}.${ext}`
+  const { error } = await supabase.storage.from(FILES_BUCKET).upload(path, blob, { contentType: type, upsert: false })
   if (error) throw error
   return supabase.storage.from(FILES_BUCKET).getPublicUrl(path).data.publicUrl
 }

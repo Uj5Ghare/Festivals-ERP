@@ -62,6 +62,49 @@ export default function Profile() {
     }
   }
 
+  const [newKey, setNewKey] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [resetFor, setResetFor] = useState<string | null>(null)
+  const [pin, setPin] = useState('')
+
+  async function makeKey() {
+    if (mandal.has_recovery_key && !window.confirm(t('recoveryRemakeWarn'))) return
+    setBusy(true)
+    try {
+      setNewKey(await api.createRecoveryKey(mandal.id))
+      setCopied(false)
+      await refreshMembership()
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function copyKey() {
+    try {
+      await navigator.clipboard.writeText(newKey ?? '')
+      setCopied(true)
+    } catch {
+      /* clipboard blocked: the key is on screen to write down */
+    }
+  }
+
+  async function savePin(id: string, name: string) {
+    if (!/^\d{6}$/.test(pin)) return toast.error(new Error(t('errPin')))
+    setBusy(true)
+    try {
+      await api.resetMemberPin(mandal.id, id, pin)
+      toast.show({ text: t('pinSetFor', { name }) })
+      setResetFor(null)
+      setPin('')
+    } catch (e) {
+      toast.error(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const list = members.data ?? []
 
   return (
@@ -135,6 +178,25 @@ export default function Profile() {
 
         {isPresident && <InviteCard mandal={mandal} />}
 
+        {isPresident && (
+          <section aria-label={t('recoveryTitle')} className="flex flex-col gap-2.5 rounded-2xl border border-line bg-white p-3.5">
+            <h2 className="m-0 text-[17px] font-bold">{t('recoveryTitle')}</h2>
+            <p className="m-0 text-sm text-ink-3">{t('recoveryNote')}</p>
+            {newKey && (
+              <div className="rounded-xl border border-haldi bg-haldi-tint p-3 text-center">
+                <div className="text-[13px] font-semibold text-kumkum-dark">{t('recoveryShown')}</div>
+                <div className="mt-1 select-all text-[28px] font-bold tracking-[0.12em] text-ink">{newKey}</div>
+                <button type="button" onClick={copyKey} className="mt-2 h-11 rounded-xl border-[1.5px] border-line-2 bg-white px-5 text-[15px] font-bold text-kumkum">
+                  {copied ? t('copied') : t('copy')}
+                </button>
+              </div>
+            )}
+            <button type="button" disabled={busy} onClick={makeKey} className="flex h-12 items-center justify-center rounded-xl border-[1.5px] border-line-2 bg-white text-[15px] font-bold text-kumkum">
+              {mandal.has_recovery_key ? t('recoveryRemake') : t('recoveryMake')}
+            </button>
+          </section>
+        )}
+
         <section aria-label={t('volunteers')} className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between">
             <h2 className="m-0 text-[17px] font-bold">{t('volunteers')}</h2>
@@ -142,7 +204,7 @@ export default function Profile() {
           </div>
           <ul className="m-0 list-none rounded-2xl border border-line bg-white p-0">
             {list.map((m, i) => (
-              <li key={m.user_id} className={`flex items-center gap-3 py-2.5 pl-3.5 pr-2 ${i < list.length - 1 ? 'border-b border-line-3' : ''}`}>
+              <li key={m.user_id} className={`flex flex-wrap items-center gap-x-3 py-2.5 pl-3.5 pr-2${i < list.length - 1 ? 'border-b border-line-3' : ''}`}>
                 <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-kumkum-tint text-base font-bold text-kumkum">{initial(m.name)}</span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-1.5">
@@ -153,9 +215,20 @@ export default function Profile() {
                   <span className="block text-[13px] text-ink-4">+91 {m.phone}</span>
                 </span>
                 {isPresident && m.user_id !== userId && (
-                  <button type="button" onClick={() => removeMember(m.user_id, m.name)} aria-label={t('removeMemberAria', { name: m.name })} className="flex h-11 w-11 flex-none items-center justify-center rounded-full text-ink-4">
-                    <IconClose size={20} />
-                  </button>
+                  <>
+                    <button type="button" onClick={() => { setResetFor(resetFor === m.user_id ? null : m.user_id); setPin('') }} aria-label={t('resetPinAria', { name: m.name })} className="flex h-11 flex-none items-center justify-center rounded-full px-2.5 text-[13px] font-bold text-kumkum">
+                      {t('resetPinBtn')}
+                    </button>
+                    <button type="button" onClick={() => removeMember(m.user_id, m.name)} aria-label={t('removeMemberAria', { name: m.name })} className="flex h-11 w-11 flex-none items-center justify-center rounded-full text-ink-4">
+                      <IconClose size={20} />
+                    </button>
+                  </>
+                )}
+                {resetFor === m.user_id && (
+                  <div className="flex w-full basis-full items-center gap-2 pb-1 pl-[52px]">
+                    <input inputMode="numeric" maxLength={6} autoFocus placeholder={t('newPin')} aria-label={t('newPin')} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} className={inputCls + ' h-11 min-w-0 flex-1 text-center tracking-[0.3em]'} />
+                    <button type="button" disabled={busy} onClick={() => savePin(m.user_id, m.name)} className="h-11 flex-none rounded-xl bg-kumkum px-4 text-[14px] font-bold text-white">{t('setNewPin')}</button>
+                  </div>
                 )}
               </li>
             ))}

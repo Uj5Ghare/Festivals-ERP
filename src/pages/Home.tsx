@@ -4,7 +4,6 @@ import { useMandal } from '../lib/session'
 import { useDonations, useExpenses, totals } from '../lib/api'
 import { rs } from '../lib/format'
 import { Screen, Toran, MandalLogo, BottomNav } from '../components/ui'
-import { LangToggle } from '../components/LangToggle'
 import { IconArrowIn, IconArrowOut, IconList, IconLock, IconMinus, IconPlus, IconUser } from '../components/Icons'
 
 export default function Home() {
@@ -28,7 +27,6 @@ export default function Home() {
             {t('yearLabel', { year: mandal.year })}
           </div>
         </div>
-        <LangToggle />
         <Link
           to="/profile"
           aria-label={t('profileAria')}
@@ -72,6 +70,13 @@ export default function Home() {
             {t('viewRecords')}
           </Link>
         </section>
+      )}
+
+      {isPresident && !mandal.has_recovery_key && (
+        <Link to="/profile" className="mx-5 mt-4 flex items-center gap-2 rounded-2xl border border-haldi bg-haldi-tint px-4 py-3 text-sm font-bold text-kumkum-dark">
+          <IconLock size={18} />
+          {t('recoveryNudge')}
+        </Link>
       )}
 
       {isPresident && (

@@ -121,16 +121,21 @@ export function whatsappLink(text: string, phone?: string | null) {
   return `https://wa.me/${p}?text=${encodeURIComponent(text)}`
 }
 
-/** Shares a picture of a card (receipt / report). Falls back to downloading it. */
-export async function shareNodeAsImage(node: HTMLElement, fileName: string, text: string) {
+/**
+ * Shares the card (receipt / report) as a picture WITH the text message, in one
+ * go, through the phone's share sheet (pick WhatsApp there). Where the browser
+ * cannot share files (e.g. a computer) the picture is saved instead.
+ */
+export async function shareNodeAsImage(node: HTMLElement, fileName: string, text: string): Promise<'shared' | 'saved'> {
   const { toBlob } = await import('html-to-image')
   const blob = await toBlob(node, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' })
   if (!blob) throw new Error('image')
   const file = new File([blob], fileName, { type: 'image/png' })
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
-  if (nav.canShare?.({ files: [file] })) {
-    await nav.share({ files: [file], text })
-    return
+  const data: ShareData = { files: [file], text }
+  if (nav.share && nav.canShare?.(data)) {
+    await nav.share(data)
+    return 'shared'
   }
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -138,4 +143,5 @@ export async function shareNodeAsImage(node: HTMLElement, fileName: string, text
   a.download = fileName
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 2000)
+  return 'saved'
 }

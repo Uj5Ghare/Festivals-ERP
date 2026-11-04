@@ -8,6 +8,7 @@ export interface Mandal {
   logo_url: string | null
   join_code: string
   receipt_seq: number
+  has_recovery_key: boolean
   created_by: string
   created_at: string
 }

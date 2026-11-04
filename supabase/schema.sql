@@ -296,6 +296,92 @@ grant execute on function
 to authenticated;
 
 -- ---------------------------------------------------------------------
+-- Forgotten PIN
+--  * A volunteer who forgets the PIN: the president sets a new one (Profile).
+--  * The president who forgets the PIN: uses the RECOVERY KEY created in
+--    Profile ("Forgot PIN?" on the login screen). The key is stored only as a
+--    hash, in a table no app user can read, and 5 wrong tries lock it for 15 min.
+-- ---------------------------------------------------------------------
+alter table public.mandals add column if not exists has_recovery_key boolean not null default false;
+
+create table if not exists public.mandal_secrets (
+  mandal_id     uuid primary key references public.mandals (id) on delete cascade,
+  recovery_hash text not null,
+  fails         int  not null default 0,
+  locked_until  timestamptz
+);
+alter table public.mandal_secrets enable row level security;
+revoke all on public.mandal_secrets from anon, authenticated;
+
+-- President: make a new recovery key (the old one stops working). Shown once.
+create or replace function public.create_recovery_key(p_mandal uuid)
+returns text language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_alpha constant text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';  -- no 0/O/1/I/L
+  v_bytes bytea := gen_random_bytes(10);
+  v_key   text := '';
+  i       int;
+begin
+  if not is_president(p_mandal) then raise exception 'only the president can do this'; end if;
+  for i in 0..9 loop
+    v_key := v_key || substr(v_alpha, (get_byte(v_bytes, i) % 31) + 1, 1);
+  end loop;
+  insert into mandal_secrets (mandal_id, recovery_hash) values (p_mandal, crypt(v_key, gen_salt('bf')))
+    on conflict (mandal_id) do update set recovery_hash = excluded.recovery_hash, fails = 0, locked_until = null;
+  update mandals set has_recovery_key = true where id = p_mandal;
+  return substr(v_key, 1, 5) || '-' || substr(v_key, 6, 5);
+end $$;
+
+-- President: set a new PIN for one of the mandal's volunteers.
+create or replace function public.reset_member_pin(p_mandal uuid, p_user uuid, p_pin text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if not is_president(p_mandal) then raise exception 'only the president can do this'; end if;
+  if p_pin is null or p_pin !~ '^\d{6}$' then raise exception 'PIN must be 6 digits'; end if;
+  if not exists (select 1 from members where mandal_id = p_mandal and user_id = p_user and role = 'volunteer') then
+    raise exception 'not a volunteer of this mandal';
+  end if;
+  update auth.users set encrypted_password = crypt(p_pin, gen_salt('bf')), updated_at = now() where id = p_user;
+end $$;
+
+-- Signed-out president: phone + recovery key + new PIN. Returns 'ok', 'wrong' or 'locked'.
+create or replace function public.reset_pin_with_key(p_phone text, p_key text, p_pin text)
+returns text language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_phone  text := right(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g'), 10);
+  v_key    text := upper(regexp_replace(coalesce(p_key, ''), '[^A-Za-z0-9]', '', 'g'));
+  v_status text := 'wrong';
+  r        record;
+begin
+  if p_pin is null or p_pin !~ '^\d{6}$' then raise exception 'PIN must be 6 digits'; end if;
+  for r in
+    select m.mandal_id, m.user_id, s.recovery_hash, s.fails, s.locked_until
+    from members m join mandal_secrets s on s.mandal_id = m.mandal_id
+    where m.role = 'president' and m.phone = v_phone
+  loop
+    if r.locked_until is not null and r.locked_until > now() then
+      v_status := 'locked';
+    elsif crypt(v_key, r.recovery_hash) = r.recovery_hash then
+      update auth.users set encrypted_password = crypt(p_pin, gen_salt('bf')), updated_at = now() where id = r.user_id;
+      update mandal_secrets set fails = 0, locked_until = null where mandal_id = r.mandal_id;
+      return 'ok';
+    else
+      update mandal_secrets
+        set fails = case when r.fails + 1 >= 5 then 0 else r.fails + 1 end,
+            locked_until = case when r.fails + 1 >= 5 then now() + interval '15 minutes' else r.locked_until end
+        where mandal_id = r.mandal_id;
+      v_status := 'wrong';
+    end if;
+  end loop;
+  return v_status;
+end $$;
+
+revoke execute on function public.create_recovery_key(uuid), public.reset_member_pin(uuid, uuid, text),
+  public.reset_pin_with_key(text, text, text) from public;
+grant execute on function public.create_recovery_key(uuid), public.reset_member_pin(uuid, uuid, text) to authenticated;
+grant execute on function public.reset_pin_with_key(text, text, text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------
 -- Live updates (other volunteers' entries appear without refreshing)
 -- ---------------------------------------------------------------------
 do $$
@@ -321,6 +407,11 @@ begin
     insert into storage.buckets (id, name, public)
       values ('mandal-files', 'mandal-files', true)
       on conflict (id) do nothing;
+
+    -- Uploads need SELECT as well as INSERT: without it Storage refuses the file.
+    drop policy if exists mandal_files_select on storage.objects;
+    create policy mandal_files_select on storage.objects for select to authenticated
+      using (bucket_id = 'mandal-files');
 
     drop policy if exists mandal_files_insert on storage.objects;
     create policy mandal_files_insert on storage.objects for insert to authenticated

@@ -41,7 +41,8 @@ export default function Receipt() {
     if (!card.current) return
     setSharing(true)
     try {
-      await shareNodeAsImage(card.current, `pavti-${d!.receipt_no}.png`, message)
+      const r = await shareNodeAsImage(card.current, `pavti-${d!.receipt_no}.png`, message)
+      if (r === 'saved') toast.show({ text: t('imageDownloaded') })
     } catch (e) {
       if ((e as Error).name !== 'AbortError') toast.error(e)
     } finally {
@@ -143,20 +144,15 @@ export default function Receipt() {
       </div>
 
       <ActionBar className="flex flex-col gap-2.5">
-        <a
-          href={whatsappLink(message, d.phone)}
-          target="_blank"
-          rel="noreferrer"
-          className="flex h-14 items-center justify-center gap-2.5 rounded-2xl bg-durva text-[17px] font-bold text-white"
-        >
+        <button type="button" onClick={shareImage} disabled={sharing} className="flex h-14 items-center justify-center gap-2.5 rounded-2xl bg-durva text-[17px] font-bold text-white disabled:opacity-60">
           <IconChat size={20} />
-          {t('sendWhatsapp')}
-        </a>
+          {sharing ? t('loading') : t('sendWhatsapp')}
+        </button>
         <div className="grid grid-cols-2 gap-2.5">
-          <button type="button" onClick={shareImage} disabled={sharing} className="flex h-12 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-line-2 bg-white text-[15px] font-semibold">
+          <a href={whatsappLink(message, d.phone)} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-line-2 bg-white text-[15px] font-semibold">
             <IconShare size={18} />
-            {t('shareImage')}
-          </button>
+            {t('sendTextOnly')}
+          </a>
           <button type="button" onClick={() => window.print()} className="flex h-12 items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-line-2 bg-white text-[15px] font-semibold">
             <IconPrint size={18} />
             {t('print')}

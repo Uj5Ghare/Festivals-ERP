@@ -93,7 +93,10 @@ npm run dev               # open the address it prints
 **Updating the database after an app update.** `schema.sql` is safe to run again. When a new version changes it (as the read-only volunteers change did), paste the whole file into **SQL Editor** and **Run** once. Your data is kept.
 
 
-**Someone forgot their PIN.** In Supabase **SQL Editor**, run this with their number and a new PIN, then tell them the new PIN:
+**Someone forgot their PIN.**
+- **A volunteer:** the president opens **Profile**, taps **पिन बदला** next to the volunteer's name, types a new 6-digit PIN and tells them.
+- **The president:** on the login screen tap **पिन विसरलात?** and enter mobile number, **recovery key** and a new PIN. The president creates the key once in **Profile → रिकव्हरी की** (Home reminds them until they do) and must write it down; it is shown only once. 5 wrong tries lock it for 15 minutes.
+- **Last resort (if the president never made a key):** in Supabase **SQL Editor**, run this with their number and a new PIN:
 
 ```sql
 update auth.users

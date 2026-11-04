@@ -53,7 +53,12 @@ export function initial(name: string): string {
 
 /** Shrinks a photo before upload so it is quick on slow mobile data. */
 export async function shrinkImage(file: File, maxSide: number): Promise<Blob> {
-  const bitmap = await createImageBitmap(file)
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    return file // format the browser cannot redraw (e.g. HEIC): upload the original
+  }
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
