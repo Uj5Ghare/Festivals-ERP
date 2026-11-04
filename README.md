@@ -68,6 +68,8 @@ npm run dev               # open the address it prints
 1. Push this folder to a GitHub repository.
 2. Go to <https://vercel.com> → **Add New → Project** → import the repository. Vercel detects Vite by itself.
 3. Under **Environment Variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+   - If you connected Supabase through Vercel's **Supabase integration** instead, you don't need to add these by hand. The app also reads the integration's own names (`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`, or `SUPABASE_URL` / `SUPABASE_ANON_KEY`).
+   - The keys are built into the app when Vercel builds it. After adding or changing them, **redeploy** (Deployments → ⋯ → Redeploy); otherwise the old build keeps showing "not connected".
 4. Click **Deploy**. You get a link like `https://mandal-hisaab.vercel.app`. Every push to GitHub redeploys automatically.
 
 `vercel.json` already makes deep links like `/hisaab` work, and keeps the offline service worker fresh.

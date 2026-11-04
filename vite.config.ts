@@ -1,9 +1,30 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Accept the Supabase keys under any of the names they commonly arrive with:
+  // our own VITE_* names, or the names Vercel's Supabase integration creates.
+  // Only the public URL and the public (anon / publishable) key are read here —
+  // never the service-role key, which must not reach the browser.
+  const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env } as Record<string, string | undefined>
+  const pick = (...names: string[]) => names.map((n) => env[n]).find((v) => v && v.trim()) ?? ''
+  const supabaseUrl = pick('VITE_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_URL')
+  const supabaseKey = pick(
+    'VITE_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'SUPABASE_ANON_KEY',
+    'VITE_SUPABASE_PUBLISHABLE_KEY',
+    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+    'SUPABASE_PUBLISHABLE_KEY',
+  )
+
+  return {
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseKey),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -41,4 +62,5 @@ export default defineConfig({
       },
     }),
   ],
+  }
 })
