@@ -38,7 +38,6 @@ export default function Report() {
 
   const message = t('reportMsg', {
     mandal: mandal.name,
-    festival: mandal.festival,
     year: mandal.year,
     in: rs(s.paidIn),
     out: rs(s.out),
@@ -74,10 +73,10 @@ export default function Report() {
           <div className="bg-kumkum px-[18px] pb-4 text-white">
             <Toran className="-mx-[18px] mb-3 w-[calc(100%+36px)]" />
             <div className="flex items-center gap-3">
-              <MandalLogo url={mandal.logo_url} />
+              <MandalLogo url={mandal.logo_url} name={mandal.name} />
               <div>
                 <div className="text-[19px] font-bold leading-tight">{mandal.name}</div>
-                <div className="text-sm text-haldi-tint">{t('reportHeading', { festival: mandal.festival, year: mandal.year })}</div>
+                <div className="text-sm text-haldi-tint">{t('reportHeading', { year: mandal.year })}</div>
               </div>
             </div>
           </div>

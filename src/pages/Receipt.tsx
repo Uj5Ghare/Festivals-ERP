@@ -58,11 +58,11 @@ export default function Receipt() {
           <div className="bg-kumkum px-[18px] pb-4 text-white">
             <Toran className="-mx-[18px] mb-3 w-[calc(100%+36px)]" />
             <div className="flex items-center gap-3">
-              <MandalLogo url={mandal.logo_url} />
+              <MandalLogo url={mandal.logo_url} name={mandal.name} />
               <div className="min-w-0">
                 <div className="text-[19px] font-bold leading-tight">{mandal.name}</div>
                 <div className="text-[13px] text-haldi-tint">
-                  {mandal.festival} {mandal.year}
+                  {t('yearLabel', { year: mandal.year })}
                 </div>
               </div>
             </div>
@@ -120,8 +120,8 @@ export default function Receipt() {
           </div>
 
           <div className="px-[18px] pb-[18px] pt-1 text-center">
-            <div className="text-xl font-bold text-kumkum">{t('bappa')}</div>
-            <div className="mt-1 text-sm text-ink-2">{t('thanks')}</div>
+            <div className="text-xl font-bold text-kumkum">{t('thankYou')}</div>
+            <div className="mt-1 text-sm text-ink-2">{t('thanksFrom', { mandal: mandal.name })}</div>
             <div className="mt-4 flex items-end justify-between text-left">
               <div className="text-xs text-ink-3">
                 {t('collectedBy')}

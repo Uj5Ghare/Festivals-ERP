@@ -101,7 +101,7 @@ export default function Records() {
           {t('you')}: <span className="font-bold">{member.name}</span>
         </span>
         <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isPresident ? 'bg-haldi-tint text-kumkum-dark' : 'bg-bg-2 text-ink-2'}`}>
-          {isPresident ? t('rolePresident') : t('roleVolunteer')}
+          {isPresident ? t('rolePresident') : `${t('roleVolunteer')} · ${t('viewOnly')}`}
         </span>
       </div>
 
@@ -179,7 +179,7 @@ export default function Records() {
             </div>
 
             {liveD.length === 0 ? (
-              <Empty text={t('noDonations')} to="/vargani/new" cta={t('addDonation')} />
+              <Empty text={t('noDonations')} to={isPresident ? '/vargani/new' : undefined} cta={t('addDonation')} />
             ) : shownD.length === 0 ? (
               <div className="py-8 text-center text-sm text-ink-3">{t('noMatch')}</div>
             ) : (
@@ -223,10 +223,12 @@ export default function Records() {
               <div className="text-right text-[13px] text-ink-3">{t('entries', { n: liveE.length })}</div>
             </section>
 
-            <Link to="/kharch/new" className="mt-3 flex h-[52px] items-center justify-center gap-2 rounded-[14px] bg-out text-[17px] font-bold text-white">
-              <IconPlus size={20} />
-              {t('addNewExpense')}
-            </Link>
+            {isPresident && (
+              <Link to="/kharch/new" className="mt-3 flex h-[52px] items-center justify-center gap-2 rounded-[14px] bg-out text-[17px] font-bold text-white">
+                <IconPlus size={20} />
+                {t('addNewExpense')}
+              </Link>
+            )}
 
             {liveE.length === 0 ? (
               <div className="py-8 text-center text-sm text-ink-3">{t('noExpenses')}</div>
@@ -316,7 +318,7 @@ function DeleteButton({ isPresident, requested, busy, label, onRemove, onRequest
   isPresident: boolean; requested: boolean; busy: boolean; label: string; onRemove: () => void; onRequest: () => void
 }) {
   const { t } = useI18n()
-  if (requested) return null
+  if (requested || !isPresident) return null
   return (
     <button
       type="button"
@@ -363,10 +365,12 @@ function DonationCard({ d, busy, isPresident, userId, requester, onCollect, onRe
             <span className="rounded-full bg-due-tint px-2 py-0.5 text-xs font-bold text-due-dark">
               {d.paid > 0 ? t('pillDue', { amount: rs(bal) }) : t('statusPending')}
             </span>
-            <button type="button" disabled={busy} onClick={onCollect} aria-label={t('collectAria', { name: d.name })} className="flex h-11 items-center gap-1 rounded-[10px] bg-durva px-3 text-[13px] font-bold text-white">
-              <IconCheck size={14} />
-              {t('collect')}
-            </button>
+            {isPresident && (
+              <button type="button" disabled={busy} onClick={onCollect} aria-label={t('collectAria', { name: d.name })} className="flex h-11 items-center gap-1 rounded-[10px] bg-durva px-3 text-[13px] font-bold text-white">
+                <IconCheck size={14} />
+                {t('collect')}
+              </button>
+            )}
           </>
         )}
         <DeleteButton isPresident={isPresident} requested={Boolean(d.delete_requested_by)} busy={busy} label={d.name} onRemove={remove} onRequest={request} />
@@ -453,14 +457,16 @@ function Bin({ open, onToggle, items }: {
   )
 }
 
-function Empty({ text, to, cta }: { text: string; to: string; cta: ReactNode }) {
+function Empty({ text, to, cta }: { text: string; to?: string; cta: ReactNode }) {
   return (
     <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line-2 bg-white px-4 py-8 text-center">
       <p className="m-0 text-[15px] text-ink-3">{text}</p>
-      <Link to={to} className="flex h-12 items-center gap-2 rounded-xl bg-durva px-4 text-base font-bold text-white">
-        <IconPlus size={18} />
-        {cta}
-      </Link>
+      {to && (
+        <Link to={to} className="flex h-12 items-center gap-2 rounded-xl bg-durva px-4 text-base font-bold text-white">
+          <IconPlus size={18} />
+          {cta}
+        </Link>
+      )}
     </div>
   )
 }

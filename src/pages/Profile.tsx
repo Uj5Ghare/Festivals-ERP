@@ -73,14 +73,14 @@ export default function Profile() {
           <div className="flex items-center gap-3.5">
             {isPresident ? (
               <label htmlFor="pf-logo" className="pick relative flex-none cursor-pointer" aria-label={t('changeLogoAria')}>
-                <MandalLogo url={mandal.logo_url} size={72} radius={18} />
+                <MandalLogo url={mandal.logo_url} name={mandal.name} size={72} radius={18} />
                 <span aria-hidden="true" className="absolute -bottom-1.5 -right-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-kumkum text-white">
                   <IconCamera size={14} />
                 </span>
                 <input id="pf-logo" type="file" accept="image/*" className="sr-only-input" onChange={(e) => pickLogo(e.target.files?.[0])} />
               </label>
             ) : (
-              <MandalLogo url={mandal.logo_url} size={72} radius={18} />
+              <MandalLogo url={mandal.logo_url} name={mandal.name} size={72} radius={18} />
             )}
             {editing ? (
               <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -91,7 +91,7 @@ export default function Profile() {
               <div className="min-w-0 flex-1">
                 <div className="text-lg font-bold leading-tight">{mandal.name}</div>
                 <div className="text-[13px] text-ink-4">
-                  {mandal.festival} {mandal.year}
+                  {t('yearLabel', { year: mandal.year })}
                 </div>
               </div>
             )}
@@ -133,7 +133,7 @@ export default function Profile() {
           )}
         </section>
 
-        <InviteCard mandal={mandal} />
+        {isPresident && <InviteCard mandal={mandal} />}
 
         <section aria-label={t('volunteers')} className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between">

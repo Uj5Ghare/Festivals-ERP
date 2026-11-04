@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { isConfigured } from './lib/supabase'
 import { useSession } from './lib/session'
+import type { ReactNode } from 'react'
 import { useI18n } from './lib/i18n'
 import { useRealtime } from './lib/api'
 import { useOnline } from './lib/device'
@@ -60,16 +61,22 @@ function MandalRoutes({ mandalId }: { mandalId: string }) {
       )}
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/vargani/new" element={<Donation />} />
+        <Route path="/vargani/new" element={<PresidentOnly><Donation /></PresidentOnly>} />
         <Route path="/vargani/:id/done" element={<DonationDone />} />
         <Route path="/vargani/:id/receipt" element={<Receipt />} />
-        <Route path="/kharch/new" element={<Expense />} />
+        <Route path="/kharch/new" element={<PresidentOnly><Expense /></PresidentOnly>} />
         <Route path="/hisaab" element={<Records />} />
         <Route path="/report" element={<Report />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/invite" element={<Invite />} />
+        <Route path="/invite" element={<PresidentOnly><Invite /></PresidentOnly>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   )
+}
+
+/** Volunteers are read-only: screens that add or change data send them Home. */
+function PresidentOnly({ children }: { children: ReactNode }) {
+  const { isPresident } = useSession()
+  return isPresident ? <>{children}</> : <Navigate to="/" replace />
 }

@@ -5,11 +5,11 @@ import { useDonations, useExpenses, totals } from '../lib/api'
 import { rs } from '../lib/format'
 import { Screen, Toran, MandalLogo, BottomNav } from '../components/ui'
 import { LangToggle } from '../components/LangToggle'
-import { IconArrowIn, IconArrowOut, IconMinus, IconPlus, IconUser } from '../components/Icons'
+import { IconArrowIn, IconArrowOut, IconList, IconLock, IconMinus, IconPlus, IconUser } from '../components/Icons'
 
 export default function Home() {
   const { t, lang } = useI18n()
-  const { mandal } = useMandal()
+  const { mandal, isPresident } = useMandal()
   // Big buttons carry the other language in small text, as in the design
   const other = lang === 'mr' ? { d: 'Add Donation', e: 'Add Expense' } : { d: 'वर्गणी घ्या', e: 'खर्च लिहा' }
   const donations = useDonations(mandal.id)
@@ -21,11 +21,11 @@ export default function Home() {
   return (
     <Screen>
       <header className="flex items-center gap-2.5 px-5 pb-2 pt-6">
-        <MandalLogo url={mandal.logo_url} />
+        <MandalLogo url={mandal.logo_url} name={mandal.name} />
         <div className="min-w-0 flex-1">
           <div className="line-clamp-2 text-[17px] font-bold leading-tight">{mandal.name}</div>
           <div className="text-[13px] text-ink-4">
-            {mandal.festival} {mandal.year}
+            {t('yearLabel', { year: mandal.year })}
           </div>
         </div>
         <LangToggle />
@@ -60,6 +60,21 @@ export default function Home() {
         </div>
       </section>
 
+      {!isPresident && (
+        <section aria-label={t('readOnlyTitle')} className="mx-5 mt-4 flex flex-col gap-3 rounded-[20px] border border-line bg-white p-4">
+          <div className="flex items-center gap-2 text-[17px] font-bold">
+            <IconLock size={20} className="text-kumkum" />
+            {t('readOnlyTitle')}
+          </div>
+          <p className="m-0 text-sm text-ink-3">{t('readOnlyNote')}</p>
+          <Link to="/hisaab" className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-kumkum text-lg font-bold text-white">
+            <IconList size={20} />
+            {t('viewRecords')}
+          </Link>
+        </section>
+      )}
+
+      {isPresident && (
       <div className="mx-5 mt-4 grid grid-cols-2 gap-3">
         <Link to="/vargani/new" className="flex min-h-[140px] flex-col justify-between gap-3.5 rounded-[20px] bg-durva px-4 py-[18px] text-white">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
@@ -80,6 +95,7 @@ export default function Home() {
           </span>
         </Link>
       </div>
+      )}
 
       <div className="flex-1" />
       <BottomNav active="home" />

@@ -32,9 +32,9 @@ export default defineConfig(({ mode }) => {
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'मंडळ हिशोब — Mandal Hisaab',
-        short_name: 'मंडळ हिशोब',
-        description: 'गणपती मंडळाची वर्गणी, खर्च आणि हिशोब — सोप्या पद्धतीने.',
+        name: 'Mandal ERP',
+        short_name: 'Mandal ERP',
+        description: 'मंडळाची वर्गणी, खर्च आणि हिशोब — सोप्या पद्धतीने.',
         lang: 'mr',
         start_url: '/',
         scope: '/',

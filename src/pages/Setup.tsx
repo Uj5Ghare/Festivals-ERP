@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useI18n } from '../lib/i18n'
+import { useI18n, type DictKey } from '../lib/i18n'
 import { useSession } from '../lib/session'
 import { api } from '../lib/api'
 import { Screen, FieldError, inputCls } from '../components/ui'
@@ -17,7 +17,7 @@ export default function Setup() {
   const [choice, setChoice] = useState<'create' | 'join'>('create')
   const [mandalName, setMandalName] = useState('')
   const [code, setCode] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState<DictKey | ''>('')
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
@@ -25,8 +25,8 @@ export default function Setup() {
     setError('')
     const myName = meta.name ?? ''
     const myPhone = meta.phone ?? ''
-    if (choice === 'create' && !mandalName.trim()) return setError(t('errName'))
-    if (choice === 'join' && code.trim().length !== 6) return setError(t('errCode'))
+    if (choice === 'create' && !mandalName.trim()) return setError('errName')
+    if (choice === 'join' && code.trim().length !== 6) return setError('errCode')
     setBusy(true)
     try {
       if (choice === 'create') {
@@ -39,7 +39,7 @@ export default function Setup() {
       await refreshMembership()
     } catch (err) {
       const msg = (err as { message?: string }).message ?? ''
-      setError(/invalid code/i.test(msg) ? t('errCode') : navigator.onLine ? t('errorGeneric') : t('offline'))
+      setError(/invalid code/i.test(msg) ? 'errCode' : navigator.onLine ? 'errorGeneric' : 'offline')
       setBusy(false)
     }
   }
@@ -68,7 +68,7 @@ export default function Setup() {
   return (
     <Screen bg="bg-white">
       <header className="flex items-start justify-between px-5 pt-7">
-        <div className="flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-haldi-tint text-[19px] font-bold text-kumkum">श्री</div>
+        <img src="/pwa-192.png" alt="" className="h-[52px] w-[52px] rounded-[14px]" />
         <div className="flex items-center gap-2">
           <LangToggle />
           <button type="button" aria-label="Log out" onClick={() => supabase.auth.signOut()} className="flex h-11 w-11 items-center justify-center rounded-full border border-line text-ink-2">
@@ -109,7 +109,7 @@ export default function Setup() {
             />
           </div>
         )}
-        <FieldError>{error}</FieldError>
+        <FieldError>{error && t(error)}</FieldError>
 
         <div className="flex-1" />
         <div className="pb-6">

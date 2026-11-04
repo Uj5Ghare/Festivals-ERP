@@ -13,7 +13,7 @@ export default function Invite() {
     <Screen bg="bg-white">
       <div className="flex flex-1 flex-col gap-5 px-5 pt-8">
         <div className="flex items-center gap-3">
-          <MandalLogo url={mandal.logo_url} size={56} />
+          <MandalLogo url={mandal.logo_url} name={mandal.name} size={56} />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-sm font-bold text-durva">
               <IconCircleCheck size={18} />

@@ -32,12 +32,12 @@ export function Toran({ className = '' }: { className?: string }) {
   )
 }
 
-export function MandalLogo({ url, size = 52, radius = 14, text = 'श्री' }: { url: string | null; size?: number; radius?: number; text?: string }) {
+export function MandalLogo({ url, name, size = 52, radius = 14 }: { url: string | null; name: string; size?: number; radius?: number }) {
   const style = { width: size, height: size, borderRadius: radius }
   if (url) return <img src={url} alt="" style={style} className="block flex-none object-cover" />
   return (
     <div style={{ ...style, fontSize: Math.round(size * 0.35) }} className="flex flex-none items-center justify-center bg-haldi-tint font-bold text-kumkum">
-      {text}
+      {initial(name)}
     </div>
   )
 }

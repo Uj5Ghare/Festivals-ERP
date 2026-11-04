@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useI18n } from '../lib/i18n'
+import { useI18n, type DictKey } from '../lib/i18n'
 import { useMandal } from '../lib/session'
 import { api, useLabels } from '../lib/api'
 import { digits, toInt } from '../lib/format'
@@ -29,7 +29,7 @@ export default function Expense() {
   const [keep, setKeep] = useState(true)
   const [paidTo, setPaidTo] = useState('')
   const [bill, setBill] = useState<File | null>(null)
-  const [errors, setErrors] = useState<{ amount?: string; cat?: string; other?: string }>({})
+  const [errors, setErrors] = useState<{ amount?: DictKey; cat?: DictKey; other?: DictKey }>({})
   const [busy, setBusy] = useState(false)
 
   const isCustom = pick?.cat === 'other' && !pick.saved
@@ -40,9 +40,9 @@ export default function Expense() {
   async function save() {
     const amount = toInt(amountStr)
     const errs: typeof errors = {}
-    if (amount <= 0) errs.amount = t('errAmount')
-    if (!pick) errs.cat = t('chooseOne')
-    if (isCustom && !otherText.trim()) errs.other = t('errOtherName')
+    if (amount <= 0) errs.amount = 'errAmount'
+    if (!pick) errs.cat = 'chooseOne'
+    if (isCustom && !otherText.trim()) errs.other = 'errOtherName'
     setErrors(errs)
     if (Object.keys(errs).length || !pick) return
     setBusy(true)
@@ -102,7 +102,7 @@ export default function Expense() {
             />
             <IconPencil size={20} className="text-out" />
           </div>
-          <FieldError>{errors.amount}</FieldError>
+          <FieldError>{errors.amount && t(errors.amount)}</FieldError>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -122,7 +122,7 @@ export default function Expense() {
             )}
             {labels.map((l) => tile('saved-' + l, pick?.saved === l, () => setPick({ cat: 'other', saved: l }), <IconDots size={28} />, l, t('cat_other')))}
           </div>
-          <FieldError>{errors.cat}</FieldError>
+          <FieldError>{errors.cat && t(errors.cat)}</FieldError>
         </div>
 
         {isCustom && (
@@ -147,7 +147,7 @@ export default function Expense() {
                 </button>
               )}
             </div>
-            <FieldError>{errors.other}</FieldError>
+            <FieldError>{errors.other && t(errors.other)}</FieldError>
             <div className="text-[13px] text-out-dark">{t('orTapOne')}</div>
             <div className="flex flex-wrap gap-2">
               {suggestions.map((s) => (

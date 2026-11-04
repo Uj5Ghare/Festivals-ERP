@@ -2,6 +2,10 @@
 -- Mandal App — Supabase schema
 -- Run this once in Supabase: Dashboard → SQL Editor → New query → Run.
 -- It is safe to re-run: every object is created "if not exists" or replaced.
+--
+-- Roles: the PRESIDENT adds and changes everything. VOLUNTEERS are read-only:
+-- they can see the mandal's records, receipts and report, but cannot add,
+-- collect, delete, restore or upload anything. This is enforced below.
 -- =====================================================================
 
 create extension if not exists pgcrypto;
@@ -13,7 +17,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.mandals (
   id           uuid primary key default gen_random_uuid(),
   name         text not null check (char_length(trim(name)) between 1 and 120),
-  festival     text not null default 'गणेशोत्सव',
+  festival     text not null default '',
   year         int  not null default extract(year from now())::int,
   logo_url     text,
   join_code    text not null unique default upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 6)),
@@ -33,6 +37,9 @@ create table if not exists public.members (
   primary key (mandal_id, user_id)
 );
 create index if not exists members_user_idx on public.members (user_id);
+
+-- Older installs had a festival name as the default; the app no longer uses it.
+alter table public.mandals alter column festival set default '';
 
 create table if not exists public.donations (
   id                   uuid primary key default gen_random_uuid(),
@@ -121,25 +128,22 @@ create policy members_delete on public.members for delete
 drop policy if exists donations_select on public.donations;
 create policy donations_select on public.donations for select using (public.is_member(mandal_id));
 
--- Expenses: read and add by members. Deletion goes through the functions below.
+-- Expenses: read by members, added by the president only. Deletion goes through the functions below.
 drop policy if exists expenses_select on public.expenses;
 create policy expenses_select on public.expenses for select using (public.is_member(mandal_id));
 drop policy if exists expenses_insert on public.expenses;
 create policy expenses_insert on public.expenses for insert
-  with check (public.is_member(mandal_id) and created_by = auth.uid() and deleted_at is null
+  with check (public.is_president(mandal_id) and created_by = auth.uid() and deleted_at is null
               and delete_requested_by is null and deleted_by is null);
 
 drop policy if exists labels_select on public.expense_labels;
 create policy labels_select on public.expense_labels for select using (public.is_member(mandal_id));
 drop policy if exists labels_insert on public.expense_labels;
-create policy labels_insert on public.expense_labels for insert with check (public.is_member(mandal_id));
+create policy labels_insert on public.expense_labels for insert with check (public.is_president(mandal_id));
 
--- Column-level guard: members may only change their own display name.
+-- Members cannot edit member rows at all (volunteers are read-only).
 revoke update on public.members from authenticated;
-grant update (name, ward) on public.members to authenticated;
 drop policy if exists members_update_self on public.members;
-create policy members_update_self on public.members for update
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- The president may rename the mandal and change its logo, nothing else.
 revoke update on public.mandals from authenticated;
@@ -175,14 +179,14 @@ begin
   return v_id;
 end $$;
 
--- Record a vargani. The receipt number comes from an atomic counter, so two
--- volunteers saving at the same moment can never get the same number.
+-- Record a vargani (president only). The receipt number comes from an atomic
+-- counter, so two saves at the same moment can never get the same number.
 create or replace function public.create_donation(
   p_mandal uuid, p_name text, p_house text, p_phone text, p_total int, p_paid int)
 returns public.donations language plpgsql security definer set search_path = public as $$
 declare v_no int; v_row donations;
 begin
-  if not is_member(p_mandal) then raise exception 'not a member'; end if;
+  if not is_president(p_mandal) then raise exception 'only the president can add entries'; end if;
   if p_total is null or p_total <= 0 then raise exception 'amount must be more than 0'; end if;
   if p_paid is null or p_paid < 0 or p_paid > p_total then raise exception 'paid must be between 0 and total'; end if;
   update mandals set receipt_seq = receipt_seq + 1 where id = p_mandal returning receipt_seq into v_no;
@@ -193,13 +197,13 @@ begin
   return v_row;
 end $$;
 
--- Collect the rest of a pending / part-paid vargani.
+-- Collect the rest of a pending / part-paid vargani (president only).
 create or replace function public.mark_donation_paid(p_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare v_mandal uuid;
 begin
   select mandal_id into v_mandal from donations where id = p_id and deleted_at is null;
-  if v_mandal is null or not is_member(v_mandal) then raise exception 'not allowed'; end if;
+  if v_mandal is null or not is_president(v_mandal) then raise exception 'only the president can change entries'; end if;
   update donations set paid = total, paid_updated_at = now() where id = p_id;
 end $$;
 
@@ -215,7 +219,7 @@ begin
   elsif p_kind = 'expense' then
     select mandal_id into v_mandal from expenses where id = p_id and deleted_at is null;
   else raise exception 'bad kind'; end if;
-  if v_mandal is null or not is_member(v_mandal) then raise exception 'not allowed'; end if;
+  if v_mandal is null or not is_president(v_mandal) then raise exception 'volunteers are read-only'; end if;
   if p_kind = 'donation' then
     update donations set delete_requested_by = auth.uid(), delete_requested_at = now()
       where id = p_id and delete_requested_by is null;
@@ -321,12 +325,12 @@ begin
     drop policy if exists mandal_files_insert on storage.objects;
     create policy mandal_files_insert on storage.objects for insert to authenticated
       with check (bucket_id = 'mandal-files'
-                  and public.is_member(((storage.foldername(name))[1])::uuid));
+                  and public.is_president(((storage.foldername(name))[1])::uuid));
 
     drop policy if exists mandal_files_update on storage.objects;
     create policy mandal_files_update on storage.objects for update to authenticated
       using (bucket_id = 'mandal-files'
-             and public.is_member(((storage.foldername(name))[1])::uuid));
+             and public.is_president(((storage.foldername(name))[1])::uuid));
   end if;
 end $$;
 

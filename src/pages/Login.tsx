@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { supabase, phoneToEmail, cleanPhone } from '../lib/supabase'
-import { useI18n } from '../lib/i18n'
+import { useI18n, type DictKey } from '../lib/i18n'
 import { Screen, Toran, FieldError, inputCls } from '../components/ui'
 import { LangToggle } from '../components/LangToggle'
 
@@ -10,31 +10,42 @@ export default function Login() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [pin, setPin] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState<DictKey | ''>('')
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError('')
     const p = cleanPhone(phone)
-    if (mode === 'signup' && !name.trim()) return setError(t('errName'))
-    if (p.length !== 10) return setError(t('errPhone'))
-    if (!/^\d{6}$/.test(pin)) return setError(t('errPin'))
+    if (mode === 'signup' && !name.trim()) return setError('errName')
+    if (p.length !== 10) return setError('errPhone')
+    if (!/^\d{6}$/.test(pin)) return setError('errPin')
     setBusy(true)
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: phoneToEmail(p), password: pin })
-        if (error) setError(t('errLogin'))
+        if (error) {
+          if (error.status === 429) setError('errRateLimit')
+          else if (/not confirmed/i.test(error.message)) setError('errConfirmOn')
+          else setError('errLogin')
+        }
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: phoneToEmail(p),
           password: pin,
           options: { data: { name: name.trim(), phone: p } },
         })
-        if (error) setError(/already/i.test(error.message) ? t('errExists') : t('errorGeneric'))
+        if (error) {
+          if (error.status === 429 || /rate limit/i.test(error.message)) setError('errRateLimit')
+          else if (/already/i.test(error.message)) setError('errExists')
+          else setError('errorGeneric')
+        } else if (!data.session) {
+          // Supabase created the user but is waiting for an email confirmation that will never arrive
+          setError('errConfirmOn')
+        }
       }
     } catch {
-      setError(navigator.onLine ? t('errorGeneric') : t('offline'))
+      setError(navigator.onLine ? 'errorGeneric' : 'offline')
     } finally {
       setBusy(false)
     }
@@ -60,7 +71,7 @@ export default function Login() {
       <div className="overflow-hidden bg-kumkum px-5 pb-7 text-white">
         <Toran className="-mx-5 mb-5 w-[calc(100%+40px)]" />
         <div className="flex items-start justify-between gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-haldi-tint text-xl font-bold text-kumkum">श्री</div>
+          <img src="/pwa-192.png" alt="" className="h-14 w-14 rounded-2xl" />
           <div className="rounded-full bg-white/90">
             <LangToggle />
           </div>
@@ -93,7 +104,7 @@ export default function Login() {
               autoComplete="tel-national"
               placeholder="98XXXXXXXX"
               value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/[^\d ]/g, '').slice(0, 11))}
+              onChange={(e) => setPhone(e.target.value.replace(/[^\d +]/g, '').slice(0, 16))}
               className="min-w-0 flex-1 bg-transparent text-[17px] outline-none"
             />
           </div>
@@ -115,7 +126,7 @@ export default function Login() {
           {mode === 'signup' && <div className="text-[13px] text-ink-3">{t('pinHintSignup')}</div>}
         </div>
 
-        <FieldError>{error}</FieldError>
+        <FieldError>{error && t(error)}</FieldError>
 
         <button type="submit" disabled={busy} className="mt-1 h-[60px] rounded-2xl bg-kumkum text-lg font-bold text-white">
           {busy ? t('loading') : mode === 'login' ? t('loginBtn') : t('signupBtn')}

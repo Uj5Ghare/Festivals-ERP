@@ -1,6 +1,6 @@
-# मंडळ हिशोब — Mandal Hisaab
+# Mandal ERP
 
-A simple Marathi + English web app for Ganpati mandals to record **vargani** (donations) and **kharch** (expenses), send receipts on WhatsApp, and share a public hisaab report. It installs on Android phones like an app (PWA).
+A simple Marathi + English web app for mandals to record **vargani** (donations) and **kharch** (expenses), send receipts on WhatsApp, and share a public hisaab report. It installs on Android phones like an app (PWA).
 
 **Stack:** React + Vite + TypeScript + Tailwind · Supabase (database, login, photos) · Vercel (hosting) · PWA (Android install). Everything here runs on free plans.
 
@@ -20,7 +20,7 @@ A simple Marathi + English web app for Ganpati mandals to record **vargani** (do
   - Paid / due totals and filters, search by name, house or receipt number.
   - **जमा करा** to collect a balance.
   - Delete with Undo, and a **recently deleted** list (kept 30 days) with restore.
-- **Only the president deletes:** volunteers can only *request* a deletion. The president keeps or deletes it. This is enforced in the database, not just hidden in the app.
+- **Roles:** the **president** adds and changes everything (vargani, kharch, collecting, deleting, restoring, mandal name and logo). **Volunteers are read-only:** they can see Home, हिशोब, receipts and the public report, but cannot add or change anything. This is enforced in the database, not just hidden in the app.
 - **Public report (जाहीर हिशोब):** totals, spending by category and pending vargani, with no devotee names. Share it to the WhatsApp group or save it as a PDF.
 - **Profile:** the president changes the mandal name and logo; invite volunteers with a 6-character code; remove volunteers.
 - **मराठी / EN** switch on every screen, remembered on the phone.
@@ -83,12 +83,15 @@ npm run dev               # open the address it prints
 ## 5. First use
 
 1. **President:** open the app → **नवीन खाते** (New account) with name, mobile and a 6-digit PIN → **नवीन मंडळ तयार करा** → the invite screen shows a 6-character **mandal code** → **WhatsApp वर कोड पाठवा**.
-2. **Volunteers:** open the link → **नवीन खाते** → **मंडळात सामील व्हा** → enter the code.
+2. **Volunteers:** open the link → **नवीन खाते** → **मंडळात सामील व्हा** → enter the code. They get read-only access.
 3. The president can add the mandal logo and change the name from **Profile** (the person icon on Home).
 
 ---
 
 ## Looking after the app
+
+**Updating the database after an app update.** `schema.sql` is safe to run again. When a new version changes it (as the read-only volunteers change did), paste the whole file into **SQL Editor** and **Run** once. Your data is kept.
+
 
 **Someone forgot their PIN.** In Supabase **SQL Editor**, run this with their number and a new PIN, then tell them the new PIN:
 

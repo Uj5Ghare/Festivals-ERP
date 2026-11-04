@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useI18n } from '../lib/i18n'
+import { useI18n, type DictKey } from '../lib/i18n'
 import { useMandal } from '../lib/session'
 import { api, useDonations } from '../lib/api'
 import { digits, initial, rs, toInt } from '../lib/format'
@@ -34,7 +34,7 @@ export default function Donation() {
   const [phone, setPhone] = useState('')
   const [contacts, setContacts] = useState<PhoneContact[]>(loadSavedContacts)
   const [nameFocused, setNameFocused] = useState(false)
-  const [errors, setErrors] = useState<{ amount?: string; name?: string }>({})
+  const [errors, setErrors] = useState<{ amount?: DictKey; name?: DictKey }>({})
   const [busy, setBusy] = useState(false)
   const speech = useSpeech(lang)
   const canPick = contactsSupported()
@@ -112,8 +112,8 @@ export default function Donation() {
 
   async function save() {
     const errs: typeof errors = {}
-    if (amount <= 0) errs.amount = t('errAmount')
-    if (!name.trim()) errs.name = t('errName')
+    if (amount <= 0) errs.amount = 'errAmount'
+    if (!name.trim()) errs.name = 'errName'
     setErrors(errs)
     if (errs.amount || errs.name || overText) return
     setBusy(true)
@@ -164,7 +164,7 @@ export default function Donation() {
             <span className="h-2 w-2 rounded-full bg-durva" />
             {t('receiptNo', { n: '#' + (mandal.receipt_seq + 1) })}
           </div>
-          <span className="rounded-full bg-kumkum-tint px-2.5 py-1 text-[13px] font-bold text-kumkum-dark">{t('varganiTag', { festival: mandal.festival })}</span>
+          <span className="max-w-[55%] truncate rounded-full bg-kumkum-tint px-2.5 py-1 text-[13px] font-bold text-kumkum-dark">{mandal.name}</span>
         </div>
 
         <section aria-label={t('totalAmount')} className="rounded-2xl border border-line bg-white p-3 text-center">
@@ -184,7 +184,7 @@ export default function Donation() {
             <IconPencil size={20} className="text-kumkum" />
           </div>
           <div className="mt-1.5 text-[13px] text-ink-3">{t('typeOrPick')}</div>
-          <FieldError>{errors.amount}</FieldError>
+          <FieldError>{errors.amount && t(errors.amount)}</FieldError>
           <div role="group" aria-label={t('totalAmount')} className="mt-2 grid grid-cols-5 gap-1.5">
             {QUICK.map((a) => (
               <button
@@ -320,7 +320,7 @@ export default function Donation() {
                 </button>
               )}
             </div>
-            <FieldError>{errors.name}</FieldError>
+            <FieldError>{errors.name && t(errors.name)}</FieldError>
             {nameFocused && suggestions.length > 0 && (
               <ul role="listbox" className="absolute inset-x-0 top-[82px] z-20 m-0 list-none rounded-xl border border-line-2 bg-white p-1 shadow-[0_10px_24px_rgba(43,29,22,0.16)]">
                 {suggestions.map((c) => (
@@ -366,7 +366,7 @@ export default function Donation() {
                 autoComplete="tel-national"
                 placeholder="98XXXXXXXX"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/[^\d ]/g, '').slice(0, 11))}
+                onChange={(e) => setPhone(e.target.value.replace(/[^\d +]/g, '').slice(0, 16))}
                 className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none"
               />
               {canPick && (
