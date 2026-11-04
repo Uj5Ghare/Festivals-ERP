@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* Kumkum & Haldi design tokens — same values as the Figma/canvas design */
+@theme {
+  --font-sans: "IBM Plex Sans Devanagari", "IBM Plex Sans", system-ui, sans-serif;
+
+  --color-kumkum: #8a2a0b;
+  --color-kumkum-dark: #6e2109;
+  --color-kumkum-tint: #fbefe6;
+  --color-kumkum-line: #f0cdb8;
+  --color-haldi: #e8a317;
+  --color-haldi-tint: #fbe7b0;
+
+  --color-durva: #1e7b3a;
+  --color-durva-dark: #17602d;
+  --color-durva-darker: #134d25;
+  --color-durva-tint: #eaf5ec;
+  --color-durva-soft: #dcefe0;
+  --color-durva-line: #a9d8b4;
+
+  --color-due: #b26a00;
+  --color-due-text: #7a4600;
+  --color-due-dark: #6b3a00;
+  --color-due-tint: #fdf1d6;
+  --color-due-line: #f2c46b;
+
+  --color-out: #b42318;
+  --color-out-dark: #8e1b12;
+  --color-out-tint: #fdecea;
+  --color-out-line: #f3b8b2;
+
+  --color-ink: #2b1d16;
+  --color-ink-2: #4a3a31;
+  --color-ink-3: #5e4d43;
+  --color-ink-4: #75655b;
+
+  --color-line: #e7e2dd;
+  --color-line-2: #d6cec7;
+  --color-line-3: #f1ede9;
+  --color-bg: #f5f4f2;
+  --color-bg-2: #ece7e2;
+  --color-bg-3: #efeae5;
+  --color-paper: #faf8f6;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-2);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+label {
+  transition: opacity 120ms ease-out;
+}
+button:active,
+a:active,
+label:active {
+  opacity: 0.8;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+:focus-visible {
+  outline: 3px solid var(--color-kumkum);
+  outline-offset: 2px;
+}
+.pick:focus-within {
+  outline: 3px solid var(--color-kumkum);
+  outline-offset: 3px;
+}
+input::placeholder {
+  color: var(--color-ink-4);
+}
+/* hide number spinners: amounts use text inputs with inputmode=numeric */
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.sr-only-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Printing a receipt or the report prints only that card */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+}
